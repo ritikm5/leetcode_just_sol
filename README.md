@@ -1,18 +1,22 @@
 # leetcode
 
 <!-- START_DASHBOARD -->
+## 📊 LeetCode Practice Dashboard
 
-# LeetCode Practice Dashboard
+**Total Solved:** 2 | 🟩 1 Easy | 🟨 0 Medium | 🟥 1 Hard
 
-0 solved · 0 easy · 0 medium · 0 hard
+---
 
-**Easy Problems** (0/200)
+**Easy Problems** (1/200)
 ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜
 
 **Medium Problems** (0/400)
 ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜
 
-**Hard Problems** (0/150)
+**Hard Problems** (1/150)
 ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜
+
+### 🛠️ Language Breakdown
+- **Java**: 2 source files
 
 <!-- END_DASHBOARD -->
