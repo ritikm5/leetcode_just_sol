@@ -23,31 +23,37 @@ LANGUAGE_EXTENSIONS = {
 }
 
 def clean_and_organize_folders():
-    """Scans the root directory for loose problem folders and moves them based on a robust difficulty search."""
+    """Scans the root directory for loose problem folders and moves them safely."""
     for item in os.listdir("."):
-        # Ignore system items and destination folders
-        if os.path.isdir(item) and item not in [".git", ".github", "scripts", "Easy", "Medium", "Hard", "problems"]:
+        if os.path.isdir(item) and item not in [".git", ".github", "scripts", "Easy", "Medium", "Hard"]:
             readme_path = os.path.join(item, "README.md")
             if os.path.exists(readme_path):
-                with open(readme_path, "r", encoding="utf-8") as f:
-                    readme_text = f.read().lower()
-                
-                # Robust case-insensitive matching for LeetCode Sync outputs
-                difficulty = None
-                if "easy" in readme_text:
-                    difficulty = "Easy"
-                elif "medium" in readme_text:
-                    difficulty = "Medium"
-                elif "hard" in readme_text:
-                    difficulty = "Hard"
-                
-                if difficulty:
-                    os.makedirs(difficulty, exist_ok=True)
-                    target_path = os.path.join(difficulty, item)
-                    if os.path.exists(target_path):
-                        shutil.rmtree(target_path)
-                    shutil.move(item, difficulty)
-                    print(f"Successfully organized: {item} -> {difficulty}/")
+                try:
+                    with open(readme_path, "r", encoding="utf-8") as f:
+                        readme_text = f.read().lower()
+                    
+                    difficulty = None
+                    if "easy" in readme_text:
+                        difficulty = "Easy"
+                    elif "medium" in readme_text:
+                        difficulty = "Medium"
+                    elif "hard" in readme_text:
+                        difficulty = "Hard"
+                    
+                    if difficulty:
+                        os.makedirs(difficulty, exist_ok=True)
+                        target_path = os.path.join(difficulty, item)
+                        
+                        # Safe duplicate handling to prevent exit code 1 errors
+                        if os.path.exists(target_path):
+                            if os.path.isdir(target_path):
+                                shutil.rmtree(target_path)
+                            else:
+                                os.remove(target_path)
+                        
+                        shutil.move(item, difficulty)
+                except Exception as e:
+                    print(f"Skipping folder {item} due to: {e}")
 
 def count_problems(difficulty_dir):
     if not os.path.exists(difficulty_dir):
@@ -74,7 +80,7 @@ def generate_blocks(solved, total, color_emoji):
     return color_emoji * filled + "⬜" * (max_blocks - filled)
 
 def update_readme():
-    # 1. Organize loose files first
+    # 1. Organize loose files safely
     clean_and_organize_folders()
     
     # 2. Gather metrics
@@ -85,14 +91,14 @@ def update_readme():
     
     languages = scan_languages()
 
-    # 3. Format Language Section Strings
+    # 3. Format Language Section
     lang_section = ""
     if languages:
         lang_section = "\n### 🛠️ Language Breakdown\n"
         for lang, count in sorted(languages.items(), key=lambda x: x[1], reverse=True):
             lang_section += f"- **{lang}**: {count} problems solved\n"
 
-    # 4. Generate Dashboard Matching the Deep-ML Spec
+    # 4. Generate Dashboard matching Deep-ML Spec
     dashboard = f"""
 ## 📊 LeetCode Practice Dashboard
 
