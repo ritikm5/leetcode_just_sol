@@ -3,14 +3,12 @@ import os
 import re
 import shutil
 
-# Target problem thresholds for the visual grid
 TARGETS = {
-    "Easy": 200,
-    "Medium": 400,
-    "Hard": 150,
+    "easy": 200,
+    "medium": 400,
+    "hard": 150,
 }
 
-# File extensions mapped to programming languages
 LANGUAGE_EXTENSIONS = {
     ".py": "Python",
     ".java": "Java",
@@ -23,167 +21,195 @@ LANGUAGE_EXTENSIONS = {
     ".rs": "Rust",
 }
 
-DIFFICULTIES = ("Easy", "Medium", "Hard")
-EXCLUDED_ROOT_DIRS = {
+ROOT_EXCLUSIONS = {
     ".git",
     ".github",
+    ".venv",
+    "venv",
+    "node_modules",
     "scripts",
-    "Easy",
-    "Medium",
-    "Hard",
+    "solutions",
+    "easy",
+    "medium",
+    "hard",
+    "__pycache__",
 }
 
 
-def clean_and_organize_folders():
-    """Move loose problem folders into difficulty folders without deleting data."""
+def detect_difficulty(readme_path):
+    """Detect a problem's difficulty from its README."""
+    if not os.path.isfile(readme_path):
+        return None
+
+    try:
+        with open(readme_path, "r", encoding="utf-8") as file:
+            content = file.read()
+    except (OSError, UnicodeError) as error:
+        print(f"Could not read {readme_path}: {error}")
+        return None
+
+    # Prefer an explicit difficulty label.
+    match = re.search(
+        r"difficulty\s*[:\-]\s*(easy|medium|hard)\b",
+        content,
+        re.IGNORECASE,
+    )
+
+    if match:
+        return match.group(1).lower()
+
+    # Support READMEs with headings such as "## Medium".
+    match = re.search(
+        r"^\s{0,3}#{1,6}\s*(easy|medium|hard)\s*$",
+        content,
+        re.IGNORECASE | re.MULTILINE,
+    )
+
+    if match:
+        return match.group(1).lower()
+
+    # Do not guess when the README doesn't clearly identify difficulty.
+    return None
+
+
+def organize_solutions():
+    """Move identifiable root-level problem folders into solutions/<difficulty>."""
+    os.makedirs("solutions", exist_ok=True)
+
+    for difficulty in TARGETS:
+        os.makedirs(os.path.join("solutions", difficulty), exist_ok=True)
+
     for item in os.listdir("."):
-        if item in EXCLUDED_ROOT_DIRS:
+        if item.lower() in ROOT_EXCLUSIONS:
             continue
 
         if not os.path.isdir(item):
             continue
 
         readme_path = os.path.join(item, "README.md")
+        difficulty = detect_difficulty(readme_path)
 
-        if not os.path.isfile(readme_path):
+        if difficulty is None:
+            continue
+
+        destination = os.path.join(
+            "solutions",
+            difficulty,
+            item,
+        )
+
+        # Never overwrite an existing problem folder.
+        if os.path.exists(destination):
+            print(f"Skipping duplicate; preserving both folders: {item}")
             continue
 
         try:
-            with open(readme_path, "r", encoding="utf-8") as file:
-                readme_text = file.read().lower()
-
-            # Check for difficulty labels without matching words like "uneasy".
-            difficulty = None
-
-            for level in DIFFICULTIES:
-                if re.search(rf"\b{level.lower()}\b", readme_text):
-                    difficulty = level
-                    break
-
-            if difficulty is None:
-                continue
-
-            os.makedirs(difficulty, exist_ok=True)
-            target_path = os.path.join(difficulty, item)
-
-            # Never overwrite or delete an existing problem folder.
-            if os.path.exists(target_path):
-                print(
-                    f"Skipping {item}: destination already exists at "
-                    f"{target_path}"
-                )
-                continue
-
-            shutil.move(item, target_path)
-            print(f"Moved {item} -> {target_path}")
-
-        except (OSError, UnicodeError) as error:
-            print(f"Skipping folder {item} due to: {error}")
+            shutil.move(item, destination)
+            print(f"Organized: {item} -> {destination}")
+        except OSError as error:
+            print(f"Could not move {item}: {error}")
 
 
-def count_problems(difficulty_dir):
-    """Count problem subdirectories inside a difficulty directory."""
-    if not os.path.isdir(difficulty_dir):
+def count_problems(difficulty):
+    """Count problem directories inside solutions/<difficulty>."""
+    directory = os.path.join("solutions", difficulty)
+
+    if not os.path.isdir(directory):
         return 0
 
     return sum(
         1
-        for entry in os.scandir(difficulty_dir)
+        for entry in os.scandir(directory)
         if entry.is_dir()
     )
 
 
 def scan_languages():
-    """Count source-code files by programming language."""
-    lang_counts = {}
+    """Count supported source files under solutions/."""
+    counts = {}
 
-    for difficulty in DIFFICULTIES:
-        if not os.path.isdir(difficulty):
+    for difficulty in TARGETS:
+        directory = os.path.join("solutions", difficulty)
+
+        if not os.path.isdir(directory):
             continue
 
-        for root, _, files in os.walk(difficulty):
+        for root, _, files in os.walk(directory):
             for filename in files:
-                # splitext returns (filename_without_extension, extension).
                 extension = os.path.splitext(filename)[1].lower()
 
                 if extension in LANGUAGE_EXTENSIONS:
                     language = LANGUAGE_EXTENSIONS[extension]
-                    lang_counts[language] = (
-                        lang_counts.get(language, 0) + 1
-                    )
+                    counts[language] = counts.get(language, 0) + 1
 
-    return lang_counts
+    return counts
 
 
-def generate_blocks(solved, total, color_emoji):
-    """Generate a progress bar capped at 30 blocks."""
-    max_blocks = 30
-    percentage = solved / total if total > 0 else 0
-    filled = min(max_blocks, int(percentage * max_blocks))
-
-    return color_emoji * filled + "⬜" * (max_blocks - filled)
+def generate_blocks(solved, target, emoji):
+    """Build a 30-block progress bar."""
+    total_blocks = 30
+    filled = min(total_blocks, int(solved / target * total_blocks))
+    return emoji * filled + "⬜" * (total_blocks - filled)
 
 
 def update_readme():
-    """Organize problem folders and update the README dashboard."""
-    clean_and_organize_folders()
+    organize_solutions()
 
-    # Gather metrics
-    easy_count = count_problems("Easy")
-    medium_count = count_problems("Medium")
-    hard_count = count_problems("Hard")
-    total_solved = easy_count + medium_count + hard_count
+    easy = count_problems("easy")
+    medium = count_problems("medium")
+    hard = count_problems("hard")
+    total = easy + medium + hard
 
     languages = scan_languages()
 
-    # Build language breakdown
-    lang_section = ""
-
+    language_section = ""
     if languages:
-        lang_section = "\n### 🛠️ Language Breakdown\n"
-
+        language_section = "\n### 🛠️ Language Breakdown\n"
         for language, count in sorted(
             languages.items(),
             key=lambda item: (-item[1], item[0]),
         ):
-            lang_section += f"- **{language}**: {count} source files\n"
+            language_section += (
+                f"- **{language}**: {count} source files\n"
+            )
 
-    # Build dashboard
     dashboard = f"""## 📊 LeetCode Practice Dashboard
 
-**Total Solved:** {total_solved} | 🟩 {easy_count} Easy | 🟨 {medium_count} Medium | 🟥 {hard_count} Hard
+**Total Solved:** {total} | 🟩 {easy} Easy | 🟨 {medium} Medium | 🟥 {hard} Hard
 
 ---
 
-**Easy Problems** ({easy_count}/{TARGETS['Easy']})
-{generate_blocks(easy_count, TARGETS['Easy'], "🟩")}
+**Easy Problems** ({easy}/{TARGETS["easy"]})
+{generate_blocks(easy, TARGETS["easy"], "🟩")}
 
-**Medium Problems** ({medium_count}/{TARGETS['Medium']})
-{generate_blocks(medium_count, TARGETS['Medium'], "🟨")}
+**Medium Problems** ({medium}/{TARGETS["medium"]})
+{generate_blocks(medium, TARGETS["medium"], "🟨")}
 
-**Hard Problems** ({hard_count}/{TARGETS['Hard']})
-{generate_blocks(hard_count, TARGETS['Hard'], "🟥")}
-{lang_section}"""
+**Hard Problems** ({hard}/{TARGETS["hard"]})
+{generate_blocks(hard, TARGETS["hard"], "🟥")}
+{language_section}"""
 
     readme_path = "README.md"
+    start = "<!-- START_DASHBOARD -->"
+    end = "<!-- END_DASHBOARD -->"
 
     if os.path.isfile(readme_path):
         with open(readme_path, "r", encoding="utf-8") as file:
             content = file.read()
     else:
-        content = "# LeetCode Solutions\n"
+        content = "# LeetCode\n"
 
-    start_marker = "<!-- START_DASHBOARD -->"
-    end_marker = "<!-- END_DASHBOARD -->"
-
-    if start_marker in content and end_marker in content:
-        pattern = re.escape(start_marker) + r".*?" + re.escape(end_marker)
-
-        replacement = (
-            f"{start_marker}\n{dashboard}\n{end_marker}"
+    if (start in content) != (end in content):
+        raise ValueError(
+            "README.md must contain both dashboard markers, "
+            "or neither marker."
         )
 
-        new_content, replacements = re.subn(
+    replacement = f"{start}\n{dashboard}\n{end}"
+
+    if start in content:
+        pattern = re.escape(start) + r".*?" + re.escape(end)
+        content, replacements = re.subn(
             pattern,
             lambda _: replacement,
             content,
@@ -191,29 +217,16 @@ def update_readme():
             flags=re.DOTALL,
         )
 
-        if replacements == 0:
-            print("Warning: dashboard markers were not updated.")
-            return
-    elif start_marker in content or end_marker in content:
-        print(
-            "Error: README.md has only one dashboard marker. "
-            "Fix the markers before updating the dashboard."
-        )
-        return
+        if replacements != 1:
+            raise ValueError("Could not update the README dashboard.")
     else:
-        new_content = (
-            content.rstrip()
-            + f"\n\n{start_marker}\n{dashboard}\n{end_marker}\n"
-        )
+        content = content.rstrip() + "\n\n" + replacement + "\n"
 
     with open(readme_path, "w", encoding="utf-8") as file:
-        file.write(new_content)
+        file.write(content)
 
-    print("Dashboard updated successfully.")
-    print(
-        f"Total: {total_solved} | Easy: {easy_count} | "
-        f"Medium: {medium_count} | Hard: {hard_count}"
-    )
+    print("\nDashboard updated successfully!")
+    print(f"Total: {total} | Easy: {easy} | Medium: {medium} | Hard: {hard}")
 
 
 if __name__ == "__main__":
