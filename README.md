@@ -3,20 +3,20 @@
 <!-- START_DASHBOARD -->
 ## 📊 LeetCode Practice Dashboard
 
-**Total Solved:** 2 | 🟩 1 Easy | 🟨 0 Medium | 🟥 1 Hard
+**Total Solved:** 0 | 🟩 0 Easy | 🟨 0 Medium | 🟥 0 Hard
 
 ---
 
-**Easy Problems** (1/200)
+**Easy Problems** (0/200)
 ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜
 
 **Medium Problems** (0/400)
 ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜
 
-**Hard Problems** (1/150)
+**Hard Problems** (0/150)
 ⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜
 
 ### 🛠️ Language Breakdown
-- **Java**: 2 source files
+- **Java**: 1 source files
 
 <!-- END_DASHBOARD -->
