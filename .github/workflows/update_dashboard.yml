@@ -8,6 +8,7 @@ on:
       - 'Easy/**'
       - 'Medium/**'
       - 'Hard/**'
+  workflow_dispatch: # This line forces GitHub to display the "Run workflow" button!
 
 jobs:
   refresh-metrics:
@@ -29,7 +30,7 @@ jobs:
       - name: Push Refreshed Readme
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.email "github-actions[bot]@://github.com"
           git add README.md
           git commit -m "docs: auto-refresh leetcode dashboard grids [skip ci]" || exit 0
           git push
